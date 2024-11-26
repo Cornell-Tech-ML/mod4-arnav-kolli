@@ -112,21 +112,41 @@ class Scalar:
         return self.history is not None and self.history.last_fn is None
 
     def is_constant(self) -> bool:
+        """True if this variable is constant"""
         return self.history is None
 
     @property
     def parents(self) -> Iterable[Variable]:
-        """Get the variables used to create this one."""
+        """Returns the parent variables of this variable.
+        Should only be called during autodifferentiation on non-leaf variables.
+        """
         assert self.history is not None
         return self.history.inputs
 
     def chain_rule(self, d_output: Any) -> Iterable[Tuple[Variable, Any]]:
+        """Applies the chain rule to compute gradients for the inputs.
+
+        Args:
+        ----
+            d_output: The derivative of the output with respect to the loss.
+
+        Returns:
+        -------
+            Iterable[Tuple[Variable, Any]]: A zip of parent variables and their gradients.
+
+        """
         h = self.history
         assert h is not None
         assert h.last_fn is not None
         assert h.ctx is not None
 
-        raise NotImplementedError("Need to include this file from past assignment.")
+        fn = h.last_fn
+        ctx = h.ctx
+
+        grads = fn._backward(ctx, d_output)
+        inputs = h.inputs
+
+        return zip(inputs, grads)
 
     def backward(self, d_output: Optional[float] = None) -> None:
         """Calls autodiff to fill in the derivatives for the history of this object.
@@ -141,15 +161,100 @@ class Scalar:
             d_output = 1.0
         backpropagate(self, d_output)
 
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 1.2.
+    def lt(self, b: ScalarLike) -> Scalar:
+        """Apply the less than function"""
+        return LT.apply(self, b)
+
+    def __gt__(self, b: ScalarLike) -> Scalar:
+        """Apply the greater than function"""
+        return LT.apply(b, self)
+
+    def __sub__(self, b: ScalarLike) -> Scalar:
+        """Subtracts two values."""
+        return Add.apply(self, Neg.apply(b))
+
+    def __eq__(self, b: ScalarLike) -> Scalar:
+        """Compares two values."""
+        return EQ.apply(self, b)
+
+    def __neg__(self) -> Scalar:
+        """Apply the negation function to the scalar
+
+        Uses the Neg ScalarFunction to apply the negation function to the
+        scalar. The negation function is defined as -x.
+
+        Returns
+        -------
+            Scalar: The negation of the scalar.
+
+        """
+        return Neg.apply(self)
+
+    def __add__(self, b: ScalarLike) -> Scalar:
+        """Add two values
+
+        Returns
+        -------
+            Scalar sum of two values
+        -------
+
+        """
+        return Add.apply(self, b)
+
+    def log(self) -> Scalar:
+        """Apply the log function to the scalar
+
+        Returns
+        -------
+            Scalar: The log of the scalar.
+
+        """
+        return Log.apply(self)
+
+    def exp(self) -> Scalar:
+        """Apply the exp function to the scalar
+
+        Returns
+        -------
+            Scalar: The exp of the scalar.
+
+        """
+        return Exp.apply(self)
+
+    def sigmoid(self) -> Scalar:
+        """Apply the sigmoid function to the scalar
+
+        Uses the Sigmoid ScalarFunction to apply the sigmoid function to the
+        scalar. The sigmoid function is defined as 1 / (1 + exp(-x)).
+
+        Returns
+        -------
+            Scalar: The sigmoid of the scalar.
+
+        """
+        return Sigmoid.apply(self)
+
+    def relu(self) -> Scalar:
+        """Apply the ReLU function to the scalar
+
+        Uses the ReLU ScalarFunction to apply the ReLU function to the
+        scalar. The ReLU function is defined as max(0, x).
+
+        Returns
+        -------
+            Scalar: The ReLU of the scalar.
+
+        """
+        return ReLU.apply(self)
 
 
 def derivative_check(f: Any, *scalars: Scalar) -> None:
     """Checks that autodiff works on a python function.
     Asserts False if derivative is incorrect.
 
-    Parameters
-    ----------
+    Args:
+    ----
         f : function from n-scalars to 1-scalar.
         *scalars  : n input scalar values.
 
