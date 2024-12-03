@@ -101,7 +101,7 @@ class Max(Function):
         # Save input for backward pass
         ctx.save_for_backward(a, dim)
         # Get the maximum value along dimension
-        return fast_max(a, dim.item())
+        return fast_max(a, int(dim.item()))
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
@@ -128,14 +128,14 @@ def max(input: Tensor, dim: int) -> Tuple[Tensor, Tensor]:
 def softmax(input: Tensor, dim: int) -> Tensor:
     """Compute the softmax as a tensor."""
     exp_values = input.exp()
-    return exp_values / exp_values.sum(dim, keepdim=True)
+    return exp_values / exp_values.sum(dim)
 
 def logsoftmax(input: Tensor, dim: int) -> Tensor:
     """Compute the log of the softmax as a tensor."""
     max_vals = max(input, dim)
     shifted = input - max_vals
     exp_shifted = shifted.exp()
-    sum_exp = exp_shifted.sum(dim, keepdim=True)
+    sum_exp = exp_shifted.sum(dim)
     return shifted - sum_exp.log()
 
 def maxpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
@@ -154,6 +154,7 @@ def dropout(input: Tensor, rate: float, ignore: bool = False) -> Tensor:
     
     Returns:
         Tensor with dropout applied
+
     """
     if ignore or rate <= 0.0:
         return input
