@@ -89,9 +89,50 @@ def _tensor_conv1d(
     )
     s1 = input_strides
     s2 = weight_strides
+    
+    # Cache strides in local variables
+    s10, s11, s12 = s1[0], s1[1], s1[2]  # batch, in_channels, width
+    s20, s21, s22 = s2[0], s2[1], s2[2]  # out_channels, in_channels, kw
 
-    # TODO: Implement for Task 4.1.
-    raise NotImplementedError("Need to implement for Task 4.1")
+    # Compute output
+    for i in prange(out_size):
+        out_index = np.zeros(3, np.int32)
+        to_index(i, out_shape, out_index)
+        batch_idx, out_channel, out_pos = out_index
+        
+        acc = 0.0
+        
+        for in_channel in range(in_channels):
+            for k in range(kw):
+                if reverse:
+                    w_pos = kw - k - 1
+                    in_pos = out_pos - (kw - k - 1)
+                else:
+                    w_pos = k
+                    in_pos = out_pos + k
+                    
+                if in_pos < 0 or in_pos >= width:
+                    continue
+                    
+                in_idx = (
+                    batch_idx * s10 +
+                    in_channel * s11 +
+                    in_pos * s12
+                )
+                w_idx = (
+                    out_channel * s20 +
+                    in_channel * s21 +
+                    w_pos * s22
+                )
+                
+                acc += input[in_idx] * weight[w_idx]
+                
+        out_idx = (
+            batch_idx * out_strides[0] +
+            out_channel * out_strides[1] +
+            out_pos * out_strides[2]
+        )
+        out[out_idx] = acc
 
 
 tensor_conv1d = njit(_tensor_conv1d, parallel=True)
@@ -219,8 +260,58 @@ def _tensor_conv2d(
     s10, s11, s12, s13 = s1[0], s1[1], s1[2], s1[3]
     s20, s21, s22, s23 = s2[0], s2[1], s2[2], s2[3]
 
-    # TODO: Implement for Task 4.2.
-    raise NotImplementedError("Need to implement for Task 4.2")
+    # Compute output
+    for i in prange(out_size):
+        out_index = np.zeros(4, np.int32)
+        to_index(i, out_shape, out_index)
+        batch_idx, out_channel, out_h, out_w = out_index
+        
+        acc = 0.0
+        
+        # Iterate through input channels and kernel positions
+        for in_channel in range(in_channels):
+            for k_h in range(kh):
+                for k_w in range(kw):
+                    if reverse:
+                        w_h = kh - k_h - 1
+                        w_w = kw - k_w - 1
+                        in_h = out_h - (kh - k_h - 1)
+                        in_w = out_w - (kw - k_w - 1)
+                    else:
+                        w_h = k_h
+                        w_w = k_w
+                        in_h = out_h + k_h
+                        in_w = out_w + k_w
+                        
+                    # Check boundaries
+                    if (in_h < 0 or in_h >= height or 
+                        in_w < 0 or in_w >= width):
+                        continue
+                        
+                    # Calculate input and weight indices
+                    in_idx = (
+                        batch_idx * s10 +
+                        in_channel * s11 +
+                        in_h * s12 +
+                        in_w * s13
+                    )
+                    w_idx = (
+                        out_channel * s20 +
+                        in_channel * s21 +
+                        w_h * s22 +
+                        w_w * s23
+                    )
+                    
+                    acc += input[in_idx] * weight[w_idx]
+                    
+        # Calculate output index and store result
+        out_idx = (
+            batch_idx * out_strides[0] +
+            out_channel * out_strides[1] +
+            out_h * out_strides[2] +
+            out_w * out_strides[3]
+        )
+        out[out_idx] = acc
 
 
 tensor_conv2d = njit(_tensor_conv2d, parallel=True, fastmath=True)

@@ -11,6 +11,7 @@ from .tensor_data import (
     index_to_position,
     shape_broadcast,
     to_index,
+    MAX_DIMS,
 )
 
 if TYPE_CHECKING:
@@ -89,6 +90,7 @@ class TensorBackend:
         # Reduce
         self.add_reduce = ops.reduce(operators.add, 0.0)
         self.mul_reduce = ops.reduce(operators.mul, 1.0)
+        self.max_reduce = ops.reduce(operators.max, float("-inf"))
         self.matrix_multiply = ops.matrix_multiply
         self.cuda = ops.cuda
 
@@ -323,20 +325,15 @@ def tensor_reduce(
         a_strides: Strides,
         reduce_dim: int,
     ) -> None:
-        a_size = int(operators.prod(a_shape))
-        a_index = np.zeros(len(a_shape), dtype=np.int32)
-        out_index = np.zeros(len(out_shape), dtype=np.int32)
-
-        for i in range(a_size):
-            to_index(i, a_shape, a_index)
-            for j in range(len(a_shape)):
-                if j == reduce_dim:
-                    out_index[j] = 0
-                else:
-                    out_index[j] = a_index[j]
-            a_pos = index_to_position(a_index, a_strides)
-            out_pos = index_to_position(out_index, out_strides)
-            out[out_pos] = fn(out[out_pos], a_storage[a_pos])
+        out_index= np.zeros (MAX_DIMS, np.int32)
+        reduce_size = a_shape[reduce_dim]
+        for i in range(len (out )) :
+            to_index(i, out_shape, out_index)
+            o = index_to_position(out_index, out_strides)
+            for s in range(reduce_size):
+                out_index[ reduce_dim] = s
+                j = index_to_position(out_index, a_strides)
+                out[o] = fn(out[o], a_storage[j])
 
     return _reduce
 
