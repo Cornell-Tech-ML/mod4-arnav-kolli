@@ -152,8 +152,9 @@ def softmax(input: Tensor, dim: int) -> Tensor:
 def logsoftmax(input: Tensor, dim: int) -> Tensor:
     """Compute the log of the softmax as a tensor."""
     max_vals = max(input, dim)
-    shifted = (input - max_vals).exp()
-    sum_exp = shifted.sum(dim)
+    shifted = input - max_vals
+    exp_shifted = shifted.exp()
+    sum_exp = exp_shifted.sum(dim)
     return shifted - sum_exp.log()
 
 
