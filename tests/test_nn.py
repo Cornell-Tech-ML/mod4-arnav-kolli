@@ -1,4 +1,4 @@
-import pytest
+import pytest 
 from hypothesis import given
 
 import minitorch
@@ -33,24 +33,16 @@ def test_avg(t: Tensor) -> None:
 def test_max(t: Tensor) -> None:
     # Test max reduction along different dimensions
     out = minitorch.max(t, 0)
-    assert out.shape == (1,3, 4)
-    assert_close(
-        out[0, 0, 0], max([t[i, 0, 0] for i in range(t.shape[0])])
-    )
+    assert out.shape == (1, 3, 4)
+    assert_close(out[0, 0, 0], max([t[i, 0, 0] for i in range(t.shape[0])]))
 
     out = minitorch.max(t, 1)
     assert out.shape == (2, 1, 4)
-    assert_close(
-        out[0, 0, 0], max([t[0, i, 0] for i in range(t.shape[1])])
-    )
+    assert_close(out[0, 0, 0], max([t[0, i, 0] for i in range(t.shape[1])]))
 
     out = minitorch.max(t, 2)
     assert out.shape == (2, 3, 1)
-    assert_close(
-        out[0, 0, 0], max([t[0, 0, i] for i in range(t.shape[2])])
-    )
-
-
+    assert_close(out[0, 0, 0], max([t[0, 0, i] for i in range(t.shape[2])]))
 
 
 @pytest.mark.task4_4
