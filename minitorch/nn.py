@@ -127,7 +127,7 @@ class Max(Function):
         return grad_output * max_mask, 0.0
 
 
-def max(input: Tensor, dim: int) -> Tuple[Tensor, Tensor]:
+def max(input: Tensor, dim: int) -> Tensor:
     """Compute the max reduction.
 
     Args:
@@ -152,9 +152,8 @@ def softmax(input: Tensor, dim: int) -> Tensor:
 def logsoftmax(input: Tensor, dim: int) -> Tensor:
     """Compute the log of the softmax as a tensor."""
     max_vals = max(input, dim)
-    shifted = input - max_vals
-    exp_shifted = shifted.exp()
-    sum_exp = exp_shifted.sum(dim)
+    shifted = (input - max_vals).exp()
+    sum_exp = shifted.sum(dim)
     return shifted - sum_exp.log()
 
 
@@ -184,7 +183,7 @@ def dropout(input: Tensor, rate: float, ignore: bool = False) -> Tensor:
 
     # Create random mask
     rand_tensor = rand(input.shape, backend=input.backend)
-    dropout_mask = rand_tensor > rate
+    dropout_mask = rand_tensor > input._ensure_tensor(rate)
 
     # # Scale output during training so no rescaling is needed during inference
     # scale = 1.0 / (1.0 - rate)
